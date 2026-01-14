@@ -364,29 +364,26 @@ function renderConvergenceChart(results) {
         convergenceChart.destroy();
     }
 
-    // Find the maximum number of data points for labels
-    let maxLength = 100;
+    // Find the maximum actual iteration count across all methods
+    let maxIterations = 100;
     results.forEach(result => {
-        if (result.cost_history.length > maxLength) {
-            maxLength = result.cost_history.length;
+        // Use cost_history_x if available, otherwise use iterations
+        const maxX = result.cost_history_x
+            ? Math.max(...result.cost_history_x)
+            : result.iterations;
+        if (maxX > maxIterations) {
+            maxIterations = maxX;
         }
     });
 
-    // Generate labels for x-axis
-    const labels = Array.from({ length: maxLength }, (_, i) => i);
-
-    // Prepare datasets with properly formatted data
+    // Prepare datasets with actual iteration values on x-axis
     const datasets = results.map(result => {
-        let costData = [...result.cost_history];
+        const xValues = result.cost_history_x || result.cost_history.map((_, i) => i);
+        const yValues = result.cost_history;
 
-        // Extend HHL costs for better visualization
-        if (result.name.includes('HHL') && costData.length < 50) {
-            costData = extendCostHistory(costData, maxLength);
-        }
-
-        // Convert to {x, y} format for proper rendering
-        const formattedData = costData.map((val, idx) => ({
-            x: idx,
+        // Convert to {x, y} format using actual iteration numbers
+        const formattedData = yValues.map((val, idx) => ({
+            x: xValues[idx] || idx,
             y: Math.max(val, 1e-16) // Ensure positive values for log scale
         }));
 
@@ -403,10 +400,13 @@ function renderConvergenceChart(results) {
         };
     });
 
-    // Add exact solution line
+    // Add exact solution line spanning the full range
     datasets.push({
         label: 'Exact (QLSP)',
-        data: Array.from({ length: maxLength }, (_, i) => ({ x: i, y: 1e-12 })),
+        data: [
+            { x: 0, y: 1e-12 },
+            { x: maxIterations, y: 1e-12 }
+        ],
         borderColor: '#06b6d4',
         borderDash: [5, 5],
         borderWidth: 2,
@@ -417,7 +417,6 @@ function renderConvergenceChart(results) {
     convergenceChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
             datasets: datasets
         },
         options: {
@@ -429,7 +428,7 @@ function renderConvergenceChart(results) {
             },
             interaction: {
                 intersect: false,
-                mode: 'index'
+                mode: 'nearest'
             },
             plugins: {
                 legend: {
@@ -451,6 +450,9 @@ function renderConvergenceChart(results) {
                     padding: 12,
                     displayColors: true,
                     callbacks: {
+                        title: function (context) {
+                            return `Iteration: ${Math.round(context[0].parsed.x)}`;
+                        },
                         label: function (context) {
                             const yVal = context.parsed.y;
                             return `${context.dataset.label}: ${yVal.toExponential(2)}`;
@@ -470,10 +472,17 @@ function renderConvergenceChart(results) {
                     grid: { color: 'rgba(255,255,255,0.05)' },
                     ticks: {
                         color: '#64748b',
-                        maxTicksLimit: 10
+                        maxTicksLimit: 10,
+                        callback: function (value) {
+                            // Format large numbers (e.g., 10000 -> 10k)
+                            if (value >= 1000) {
+                                return (value / 1000) + 'k';
+                            }
+                            return value;
+                        }
                     },
                     min: 0,
-                    max: maxLength - 1
+                    max: maxIterations
                 },
                 y: {
                     type: chartScale === 'log' ? 'logarithmic' : 'linear',

@@ -49,12 +49,28 @@ class SolverConfig(BaseModel):
     adiabatic_time: float = Field(default=300000.0, ge=1000.0, le=10000000.0)
 
 
+class SolveRequest(BaseModel):
+    """Combined request body for /solve endpoint"""
+    # Problem definition
+    matrix_size: int = Field(default=4, ge=2, le=10)
+    force_position: int = Field(default=-1)
+    force_value: float = Field(default=1.0)
+    custom_matrix: Optional[List[List[float]]] = None
+    custom_force: Optional[List[float]] = None
+    # Solver configuration
+    methods: List[str] = Field(default=["hhl", "vqls", "adiabatic", "classical"])
+    vqls_max_iter: int = Field(default=200, ge=10, le=500)
+    adiabatic_steps: int = Field(default=1000, ge=100, le=100000)
+    adiabatic_time: float = Field(default=300000.0, ge=1000.0, le=10000000.0)
+
+
 class MethodResult(BaseModel):
     """Result from a single method"""
     name: str
     solution: List[float]
     normalized_solution: List[float]
     cost_history: List[float]
+    cost_history_x: List[int]  # Actual iteration numbers for x-axis
     final_cost: float
     execution_time: float
     iterations: int
@@ -121,11 +137,15 @@ def solve_hhl(A: np.ndarray, b: np.ndarray) -> MethodResult:
     
     x_normalized = x_final / norm(x_final) if norm(x_final) > 1e-12 else x_final
     
+    # x-axis is eigenvalue index (1 to n)
+    cost_history_x = list(range(1, len(cost_history) + 1))
+    
     return MethodResult(
         name="HHL (Spectral)",
         solution=x_final.tolist(),
         normalized_solution=x_normalized.tolist(),
         cost_history=cost_history,
+        cost_history_x=cost_history_x,
         final_cost=cost_history[-1] if cost_history else 1.0,
         execution_time=time.time() - start_time,
         iterations=len(eigenvalues)
@@ -164,11 +184,15 @@ def solve_vqls(A: np.ndarray, b: np.ndarray, max_iter: int = 200) -> MethodResul
     
     x_final = ansatz(result.x)
     
+    # x-axis is iteration number (1 to n)
+    cost_history_x = list(range(1, len(cost_history) + 1))
+    
     return MethodResult(
         name="VQLS (Variational)",
         solution=x_final.tolist(),
         normalized_solution=x_final.tolist(),
         cost_history=cost_history,
+        cost_history_x=cost_history_x,
         final_cost=cost_history[-1] if cost_history else qlsp_cost(x_final, A, b),
         execution_time=time.time() - start_time,
         iterations=len(cost_history)
@@ -199,6 +223,7 @@ def solve_adiabatic(
     P_perp = np.eye(n) - np.outer(b, b)
     
     cost_history = [qlsp_cost(np.real(psi), A, b)]
+    cost_history_x = [0]  # Start at step 0
     
     # Calculate sampling interval to get ~500 points for visualization
     # This doesn't change the algorithm, just how often we record for the chart
@@ -215,6 +240,7 @@ def solve_adiabatic(
         # Record cost at sampled intervals for efficient visualization
         if i % sample_interval == 0 or i == steps - 1:
             cost_history.append(qlsp_cost(np.real(psi), A, b))
+            cost_history_x.append(i + 1)  # Actual step number (1-indexed)
     
     x_final = np.real(psi)
     x_normalized = x_final / norm(x_final) if norm(x_final) > 1e-12 else x_final
@@ -224,6 +250,7 @@ def solve_adiabatic(
         solution=x_final.tolist(),
         normalized_solution=x_normalized.tolist(),
         cost_history=cost_history,
+        cost_history_x=cost_history_x,
         final_cost=cost_history[-1] if cost_history else 1.0,
         execution_time=time.time() - start_time,
         iterations=steps
@@ -244,6 +271,7 @@ def solve_classical(A: np.ndarray, b: np.ndarray) -> MethodResult:
         solution=x_classical.tolist(),
         normalized_solution=x_normalized.tolist(),
         cost_history=[cost],
+        cost_history_x=[1],
         final_cost=cost,
         execution_time=time.time() - start_time,
         iterations=1
@@ -303,26 +331,23 @@ async def get_methods():
 
 
 @app.post("/solve", response_model=SolverResponse)
-async def solve_problem(
-    problem: ElasticityProblem = ElasticityProblem(),
-    config: SolverConfig = SolverConfig()
-):
+async def solve_problem(request: SolveRequest):
     """Solve the elasticity problem with selected methods"""
     
     # Build matrix and force vector
-    if problem.custom_matrix is not None:
-        A = np.array(problem.custom_matrix, dtype=float)
+    if request.custom_matrix is not None:
+        A = np.array(request.custom_matrix, dtype=float)
         n = A.shape[0]
     else:
-        n = problem.matrix_size
+        n = request.matrix_size
         A = generate_stiffness_matrix(n)
     
-    if problem.custom_force is not None:
-        b = np.array(problem.custom_force, dtype=float)
+    if request.custom_force is not None:
+        b = np.array(request.custom_force, dtype=float)
     else:
         b = np.zeros(n)
-        force_pos = problem.force_position if problem.force_position >= 0 else n - 1
-        b[force_pos] = problem.force_value
+        force_pos = request.force_position if request.force_position >= 0 else n - 1
+        b[force_pos] = request.force_value
     
     # Normalize b
     b = b / norm(b) if norm(b) > 1e-12 else b
@@ -336,12 +361,12 @@ async def solve_problem(
     # Run selected methods
     method_map = {
         "hhl": lambda: solve_hhl(A, b),
-        "vqls": lambda: solve_vqls(A, b, config.vqls_max_iter),
-        "adiabatic": lambda: solve_adiabatic(A, b, config.adiabatic_steps, config.adiabatic_time),
+        "vqls": lambda: solve_vqls(A, b, request.vqls_max_iter),
+        "adiabatic": lambda: solve_adiabatic(A, b, request.adiabatic_steps, request.adiabatic_time),
         "classical": lambda: solve_classical(A, b)
     }
     
-    for method in config.methods:
+    for method in request.methods:
         if method in method_map:
             try:
                 result = method_map[method]()
