@@ -29,11 +29,28 @@ A polished, minimalistic web application for solving elasticity problems using q
 
 ## 🚀 Quick Start
 
-### Using Docker (Recommended)
+### Deploy on Koyeb (Recommended)
+
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?name=qlp-solver&type=git&repository=github.com/qudotcom/QLP-SOLVER&branch=main&builder=dockerfile&instance_type=free&regions=fra&ports=8000;http;/)
+
+**One-click deployment** - Click the button above to deploy directly to Koyeb!
+
+Or deploy manually:
+1. Go to [Koyeb Console](https://app.koyeb.com/)
+2. Create a new **Web Service**
+3. Select **GitHub** and choose this repository
+4. Configure:
+   - **Builder**: Dockerfile
+   - **Port**: 8000
+   - **Instance**: Free tier works fine
+5. Deploy!
+
+### Using Docker Compose (Local)
 
 ```bash
-# Clone or navigate to the project
-cd VQLS_ADIABATIQUE
+# Clone the repository
+git clone https://github.com/qudotcom/QLP-SOLVER.git
+cd QLP-SOLVER
 
 # Build and run with Docker Compose
 docker-compose up --build
@@ -123,15 +140,18 @@ A = | 2  -1   0   0 |
 ## 🏗️ Project Structure
 
 ```
-VQLS_ADIABATIQUE/
-├── docker-compose.yml
+QLP-SOLVER/
+├── Dockerfile           # Combined container for Koyeb
+├── docker-compose.yml   # Local development
+├── nginx.koyeb.conf     # Nginx config for production
+├── supervisord.conf     # Process manager config
 ├── README.md
 ├── backend/
-│   ├── Dockerfile
+│   ├── Dockerfile       # Backend-only container
 │   ├── requirements.txt
 │   └── main.py          # FastAPI + algorithms
 └── frontend/
-    ├── Dockerfile
+    ├── Dockerfile       # Frontend-only container
     ├── nginx.conf
     ├── index.html
     ├── styles.css
