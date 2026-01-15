@@ -1055,36 +1055,322 @@ body {
 
 /* --- Footer --- */
 .footer {
-    padding: var(--space-xl) 0;
+    padding: var(--space-2xl) 0;
     border-top: 1px solid var(--glass-border);
     text-align: center;
+    background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.03));
 }
 
-.footer p {
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.footer-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-tech {
     font-size: 0.75rem;
     color: var(--color-text-muted);
 }
 
-/* --- Responsive --- */
+.footer-team {
+    margin-top: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.team-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-accent-1);
+    margin-bottom: var(--space-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.team-members {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.8;
+}
+
+.footer-copyright {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-sm);
+}
+
+/* === RESPONSIVE DESIGN === */
+
+/* Tablet (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .solver-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .method-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .methods-info {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile (max-width: 768px) */
 @media (max-width: 768px) {
+    :root {
+        --space-xl: 1.5rem;
+        --space-2xl: 2rem;
+        --space-3xl: 2.5rem;
+    }
+
     .app-container {
         padding: 0 var(--space-md);
     }
 
+    /* Header */
     .header {
         flex-direction: column;
         gap: var(--space-md);
+        padding: var(--space-md) 0;
+    }
+
+    .logo {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .nav {
+        width: 100%;
+        justify-content: center;
+        gap: var(--space-sm);
+    }
+
+    .nav-link {
+        font-size: 0.75rem;
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    /* Hero */
+    .hero {
+        padding: var(--space-xl) 0;
     }
 
     .hero-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* Config Panel */
+    .config-panel,
+    .matrix-panel {
+        padding: var(--space-md);
+    }
+
+    .panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    .form-group label {
+        font-size: 0.65rem;
+    }
+
+    .checkbox-group {
+        gap: var(--space-xs);
+    }
+
+    .checkbox-label {
+        padding: var(--space-xs) var(--space-sm);
+        flex-wrap: wrap;
+    }
+
+    .method-name {
+        font-size: 0.75rem;
+    }
+
+    .method-type {
+        font-size: 0.65rem;
+    }
+
+    /* Matrix Display */
+    .matrix-cell,
+    .vector-cell {
+        width: 36px;
+        height: 36px;
+        font-size: 0.65rem;
+    }
+
+    .matrix-input,
+    .vector-input {
+        font-size: 0.6rem;
+    }
+
+    .vector-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    /* Solve Button */
+    .solve-button {
+        padding: var(--space-sm) var(--space-md);
+        font-size: 0.875rem;
+    }
+
+    /* Results */
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-sm);
+    }
+
+    .method-cards {
+        grid-template-columns: 1fr;
+        gap: var(--space-md);
+    }
+
+    .method-card {
+        padding: var(--space-md);
+    }
+
+    /* Chart */
+    .chart-container {
+        height: 280px;
+    }
+
+    .chart-controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .chart-panel .panel-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    /* Solution Table */
+    .solution-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .solution-table th,
+    .solution-table td {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+
+    /* Metrics */
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-sm);
+    }
+
+    .metric-item {
+        padding: var(--space-sm);
+    }
+
+    .metric-label {
+        font-size: 0.6rem;
+    }
+
+    .metric-value {
+        font-size: 0.9rem;
+    }
+
+    /* About Section */
+    .methods-info {
+        grid-template-columns: 1fr;
+    }
+
+    .method-info-card {
+        padding: var(--space-md);
+    }
+
+    .method-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* Footer */
+    .footer {
+        padding: var(--space-xl) var(--space-md);
+    }
+
+    .footer-team {
+        padding: var(--space-md);
+        margin: var(--space-sm) 0;
+    }
+
+    .team-members {
+        font-size: 0.7rem;
+        line-height: 2;
+    }
+
+    /* Advanced Settings */
+    .advanced-settings summary {
+        font-size: 0.7rem;
+    }
+
+    .number-input {
+        font-size: 0.8rem;
+        padding: var(--space-xs) var(--space-sm);
+    }
+}
+
+/* Small Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.25rem;
     }
 
     .matrix-cell,
     .vector-cell {
-        width: 40px;
-        height: 40px;
-        font-size: 0.75rem;
+        width: 32px;
+        height: 32px;
+        font-size: 0.6rem;
+    }
+
+    .slider-value {
+        font-size: 0.875rem;
+    }
+
+    .team-members {
+        font-size: 0.65rem;
+    }
+
+    .method-cards {
+        gap: var(--space-sm);
+    }
+
+    .stat-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr;
     }
 }
 
